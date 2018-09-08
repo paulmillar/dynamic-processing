@@ -20,15 +20,29 @@ package org.dcache.macroons;
 import com.google.gson.Gson;
 import org.apache.http.HttpResponse;
 import org.apache.http.auth.AuthenticationException;
+import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.HttpClientConnectionManager;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
+import org.apache.http.ssl.SSLContexts;
+
+import javax.net.ssl.SSLContext;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -53,9 +67,32 @@ public class MacaroonClient
     private static final ContentType MACAROON_REQUEST = ContentType.create("application/macaroon-request");
     private static final Duration MACAROON_VALIDITY = Duration.ofMinutes(5);
 
-    private final CloseableHttpClient client = HttpClients.createDefault();
-    private final UsernamePasswordCredentials creds;
+    private final CloseableHttpClient client = prepareClient();
+    private final Credentials creds;
     private final Duration defaultDuration;
+
+    public static CloseableHttpClient prepareClient() {
+        try {
+            SSLContext sslContext = SSLContexts.custom()
+                    .loadTrustMaterial(null, new TrustSelfSignedStrategy()).build();
+            HttpClientBuilder builder = HttpClientBuilder.create();
+            SSLConnectionSocketFactory sslConnectionFactory =
+                    new SSLConnectionSocketFactory(sslContext.getSocketFactory(),
+                            new NoopHostnameVerifier());
+            builder.setSSLSocketFactory(sslConnectionFactory);
+            Registry<ConnectionSocketFactory> registry =
+                    RegistryBuilder.<ConnectionSocketFactory>create()
+                    .register("https", sslConnectionFactory)
+                    .register("http", new PlainConnectionSocketFactory())
+                    .build();
+            HttpClientConnectionManager ccm = new BasicHttpClientConnectionManager(registry);
+            builder.setConnectionManager(ccm);
+            return builder.build();
+        } catch (Exception ex) {
+            System.out.println("couldn't create httpClient!!" + ex.getMessage());
+            return null;
+        }
+    }
 
     public MacaroonClient(Configuration.Macaroons config) throws AuthenticationException, IOException
     {
@@ -79,7 +116,7 @@ public class MacaroonClient
         Gson gson = new Gson();
         HttpPost httpPost = new HttpPost(uri);
 
-        MacaroonRequest request = new MacaroonRequest("activity:" + activity);
+        MacaroonRequest request = new MacaroonRequest("activity:" + activity, "path:" + uri.getPath());
         request.setValidity(duration);
         String json = gson.toJson(request);
         httpPost.setEntity(new StringEntity(json, MACAROON_REQUEST));
