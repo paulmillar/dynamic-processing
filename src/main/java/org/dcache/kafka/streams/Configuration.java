@@ -180,7 +180,9 @@ public class Configuration
     public static class EventSource
     {
         private String target;
-        private Map<String,String> matching;
+
+        @JsonProperty("path-predicate")
+        private Map<String,String> pathPredicate;
         private Map<String,GeneratedUrl> urls;
 
         public void setTarget(String topic)
@@ -188,14 +190,14 @@ public class Configuration
             this.target = topic;
         }
 
-        public void setMatching(Map<String,String> criteria)
+        public void setPathPredicate(Map<String,String> criteria)
         {
-            matching = criteria;
+            pathPredicate = criteria;
         }
 
-        public Map<String,String> getMatching()
+        public Map<String,String> getPathPredicate()
         {
-            return matching;
+            return pathPredicate;
         }
 
         public void setUrls(Map<String,GeneratedUrl> urls)

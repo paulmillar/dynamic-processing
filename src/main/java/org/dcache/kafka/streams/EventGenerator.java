@@ -30,13 +30,17 @@ import java.util.regex.Pattern;
  */
 public class EventGenerator
 {
-    private final Pattern pathCriteria;
+    private final Pattern matching;
+    private final Pattern ignoring;
     private final Map<String,UrlGeneratorTemplate> urlGeneratorTemplates = new HashMap<>();
 
     public EventGenerator(Configuration.EventSource config, UrlGenerator urlGenerator)
     {
-        String re = config.getMatching().get("path");
-        this.pathCriteria = Pattern.compile(re);
+        String matchingRe = config.getPathPredicate().get("matching");
+        matching = matchingRe == null ? null : Pattern.compile(matchingRe);
+
+        String ignoringRe = config.getPathPredicate().get("ignoring");
+        ignoring = ignoringRe == null ? null : Pattern.compile(ignoringRe);
 
         for (Map.Entry<String,Configuration.GeneratedUrl> e : config.getUrls().entrySet()) {
             urlGeneratorTemplates.put(e.getKey(), new UrlGeneratorTemplate(e.getValue(), urlGenerator));
@@ -45,7 +49,13 @@ public class EventGenerator
 
     public boolean matches(String path)
     {
-        return pathCriteria.matcher(path).matches();
+        if (matching != null && !matching.matcher(path).matches()) {
+            return false;
+        }
+        if (ignoring != null && ignoring.matcher(path).find()) {
+            return false;
+        }
+        return true;
     }
 
     public Optional<String> map(String path)
