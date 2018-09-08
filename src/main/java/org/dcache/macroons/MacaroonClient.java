@@ -34,8 +34,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.URI;
 import java.time.Duration;
 import java.util.stream.Collectors;
+
+import org.dcache.kafka.streams.Configuration;
 
 /**
  * A client that simplifies requesting macaroons from dCache.
@@ -52,21 +55,32 @@ public class MacaroonClient
 
     private final CloseableHttpClient client = HttpClients.createDefault();
     private final UsernamePasswordCredentials creds;
+    private final Duration defaultDuration;
 
-    public MacaroonClient(String username, String password) throws AuthenticationException, IOException
+    public MacaroonClient(Configuration.Macaroons config) throws AuthenticationException, IOException
     {
-        creds = new UsernamePasswordCredentials(username, password);
+        creds = new UsernamePasswordCredentials(config.getUsername(), config.getPassword());
+        Duration dl = config.getDefaultLifetime();
+        defaultDuration = dl == null ? MACAROON_VALIDITY : dl;
+
         checkCredentials();
     }
 
-    public String getMacaroon(String path, String activity)
+
+    public String getMacaroon(URI uri, String activity)
+            throws AuthenticationException, IOException
+    {
+        return getMacaroon(uri, activity, defaultDuration);
+    }
+
+    public String getMacaroon(URI uri, String activity, Duration duration)
             throws AuthenticationException, IOException
     {
         Gson gson = new Gson();
-        HttpPost httpPost = new HttpPost("https://dcache-xdc.desy.de" + path);
+        HttpPost httpPost = new HttpPost(uri);
 
         MacaroonRequest request = new MacaroonRequest("activity:" + activity);
-        request.setValidity(MACAROON_VALIDITY);
+        request.setValidity(duration);
         String json = gson.toJson(request);
         httpPost.setEntity(new StringEntity(json, MACAROON_REQUEST));
         httpPost.addHeader(new BasicScheme().authenticate(creds, httpPost, null));
