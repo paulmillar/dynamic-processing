@@ -17,39 +17,27 @@
  */
 package org.dcache.kafka.streams;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-
 /**
- *
+ * An Event send to a specific topic.
  */
-public class EventGenerators
+public class OutgoingEvent
 {
-    private final List<EventGenerator> generators;
+    private final String topic;
+    private final String payload;
 
-    public EventGenerators(List<Configuration.EventSource> eventSources,
-            UrlGenerator urlGenerator)
+    public OutgoingEvent(String topic, String payload)
     {
-        generators = eventSources.stream()
-                .map(g -> new EventGenerator(g, urlGenerator))
-                .collect(Collectors.toList());
+        this.topic = topic;
+        this.payload = payload;
     }
 
-    public boolean matches(String path)
+    public String getTopic()
     {
-        return generators.stream().anyMatch(g -> g.matches(path));
+        return topic;
     }
 
-    public List<OutgoingEvent> eventsFor(String path)
+    public String getPayload()
     {
-        List<OutgoingEvent> l = new ArrayList<>();
-
-        for (EventGenerator g : generators) {
-            g.map(path).ifPresent(l::add);
-        }
-
-        return l;
+        return payload;
     }
 }

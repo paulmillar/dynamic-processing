@@ -1,12 +1,18 @@
 package org.dcache.kafka.streams;
 
 import com.google.gson.Gson;
+import org.apache.kafka.common.serialization.Deserializer;
+import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.kstream.Produced;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 
@@ -15,6 +21,59 @@ import org.dcache.macroons.MacaroonClient;
 
 public class DynamicProcessing
 {
+    public static class OutgoingEventSerializer implements Serializer<OutgoingEvent>
+    {
+        @Override
+        public void configure(Map map, boolean bln) {
+        }
+
+        @Override
+        public byte[] serialize(String topic, OutgoingEvent data) {
+            return data.getPayload().getBytes();
+        }
+
+        @Override
+        public void close() {
+        }
+    }
+
+    public static class OutgoingEventDeserializer implements Deserializer<OutgoingEvent>
+    {
+        @Override
+        public void configure(Map map, boolean bln) {
+        }
+
+        @Override
+        public void close() {
+        }
+
+        @Override
+        public OutgoingEvent deserialize(String topic, byte[] bytes) {
+            return new OutgoingEvent(topic, new String(bytes, StandardCharsets.UTF_8));
+        }
+    }
+
+    public static class CustomSerde implements Serde<OutgoingEvent>
+    {
+        @Override
+        public void configure(Map map, boolean bln) {
+        }
+
+        @Override
+        public void close() {
+        }
+
+        @Override
+        public Serializer<OutgoingEvent> serializer() {
+            return new OutgoingEventSerializer();
+        }
+
+        @Override
+        public Deserializer<OutgoingEvent> deserializer() {
+            return new OutgoingEventDeserializer();
+        }
+    }
+
     private static MacaroonClient macaroons;
     private static Configuration config;
     private static UrlGenerator urlGenerator;
@@ -37,15 +96,18 @@ public class DynamicProcessing
 
         EventGenerators generators = new EventGenerators(config.getEventSource(), urlGenerator);
 
+        Serde<OutgoingEvent> valueSerde = new CustomSerde();
+        Serde<String> keySerde = Serdes.String();
+
         final StreamsBuilder builder = new StreamsBuilder();
 
-        builder.stream("billing")
+        builder.<String,String>stream("billing")
                 .mapValues(DynamicProcessing::toBillingEvent)
                 .filter(DynamicProcessing::onlyInterestingUploads)
                 .peek((k,v) -> {System.out.println("Event: " + v);})
                 .mapValues(BillingEvent::getPath)
                 .flatMapValues(generators::eventsFor)
-                .to("new-data");
+                .to((k,v,e) -> v.getTopic(), Produced.with(keySerde, valueSerde));
 
         final Topology topology = builder.build();
         final KafkaStreams streams = new KafkaStreams(topology, props);

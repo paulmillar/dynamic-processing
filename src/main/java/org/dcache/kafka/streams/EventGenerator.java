@@ -30,6 +30,7 @@ import java.util.regex.Pattern;
  */
 public class EventGenerator
 {
+    private final String topic;
     private final Pattern matching;
     private final Pattern ignoring;
     private final Map<String,UrlGeneratorTemplate> urlGeneratorTemplates = new HashMap<>();
@@ -45,6 +46,7 @@ public class EventGenerator
         for (Map.Entry<String,Configuration.GeneratedUrl> e : config.getUrls().entrySet()) {
             urlGeneratorTemplates.put(e.getKey(), new UrlGeneratorTemplate(e.getValue(), urlGenerator));
         }
+        topic = config.getTarget();
     }
 
     public boolean matches(String path)
@@ -58,16 +60,16 @@ public class EventGenerator
         return true;
     }
 
-    public Optional<String> map(String path)
+    public Optional<OutgoingEvent> map(String path)
     {
         if (matches(path)) {
-            return Optional.of(buildJson(path));
+            return Optional.of(buildEvent(path));
         } else {
             return Optional.empty();
         }
     }
 
-    private String buildJson(String path)
+    private OutgoingEvent buildEvent(String path)
     {
         Map<String,String> urls = new HashMap<>();
 
@@ -76,6 +78,7 @@ public class EventGenerator
             urls.put(e.getKey(), url.toASCIIString());
         }
 
-        return new Gson().toJson(urls);
+        String payload = new Gson().toJson(urls);
+        return new OutgoingEvent(topic, payload);
     }
 }

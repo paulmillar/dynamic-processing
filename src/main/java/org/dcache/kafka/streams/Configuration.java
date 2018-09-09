@@ -190,6 +190,11 @@ public class Configuration
             this.target = topic;
         }
 
+        public String getTarget()
+        {
+            return target;
+        }
+
         public void setPathPredicate(Map<String,String> criteria)
         {
             pathPredicate = criteria;
