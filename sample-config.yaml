@@ -1,0 +1,53 @@
+kafka-client:
+    id: my-unique-ID
+    bootstrap-servers: localhost:9092
+
+url-generator:
+    base: https://dcache.example.org/
+    macaroons:
+        username: dyn-data-agent
+        password: dyn-data-password
+        default-lifetime: PT15M
+
+files:
+  - target: uploaded-foo-movies          # which topic to send event
+    path-predicate:
+        matching: '/data/foo/[^/]*\.mp4' # must match whole path
+        ignoring: '-derived\.[^/.]*$'    # partial match, unless anchored
+    urls:
+        read:                            # Create a URL for downloading
+            with-macaroon:               # incoming data.
+                activity: DOWNLOAD
+        write:
+            with-macaroon:
+                activity: UPLOAD
+            derived-path:                # Calculate a new path
+                replacing: '([^/]*)\.([^.]*)$'
+                with: '\1-derived.\2'
+        log:
+            with-macaroon:
+                activity: UPLOAD
+            derived-path:
+                replacing: '([^/]*)\.[^.]*$'
+                with: '\1-derived.log'
+
+  - target: uploaded-foo-images
+    path-predicate:
+        matching: '/data/foo/incoming/[^/]*\.(jpe?g|tiff?)'
+        ignoring: '-derived\.[^/.]*$'
+    urls:
+        read:
+            with-macaroon:
+                activity: DOWNLOAD
+        write:
+            with-macaroon:
+                activity: UPLOAD
+            derived-path:
+                replacing: '([^/]*)\.([^.]*)$'
+                with: '\1-derived.\2'
+        log:
+            with-macaroon:
+                activity: UPLOAD
+            derived-path:
+                replacing: '([^/]*)\.[^.]*$'
+                with: '\1-derived.log'
