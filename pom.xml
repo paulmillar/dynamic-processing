@@ -64,6 +64,26 @@
           <target>1.8</target>
         </configuration>
       </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-release-plugin</artifactId>
+        <version>2.5.1</version>
+        <configuration>
+          <autoVersionSubmodules>true</autoVersionSubmodules>
+          <tagNameFormat>v@{project.version}</tagNameFormat>
+          <pushChanges>false</pushChanges>
+          <localCheckout>true</localCheckout>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.maven.scm</groupId>
+            <artifactId>maven-scm-provider-gitexe</artifactId>
+            <version>1.9</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+
       <plugin>
 	<artifactId>maven-assembly-plugin</artifactId>
 	<configuration>
@@ -87,6 +107,7 @@
 	</executions>
       </plugin>
     </plugins>
+
     <pluginManagement>
       <plugins>
         <plugin>
