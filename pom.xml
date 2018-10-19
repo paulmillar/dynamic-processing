@@ -19,7 +19,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.dcache.kafka</groupId>
   <artifactId>dynamic-processing</artifactId>
-  <version>0.2-SNAPSHOT</version>
+  <version>0.2</version>
   <packaging>jar</packaging>
   <name>Dynamic Processing</name>
 
@@ -27,7 +27,7 @@
     <connection>scm:git:git://github.com/paulmillar/dynamic-processing.git</connection>
     <developerConnection>scm:git:git@github.com:paulmillar/dynamic-processing.git</developerConnection>
     <url>http://github.com/paulmillar/dynamic-processing</url>
-    <tag>HEAD</tag>
+    <tag>v0.2</tag>
   </scm>
 
   <properties>
@@ -142,7 +142,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore/>
+                    <ignore />
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -156,7 +156,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore/>
+                    <ignore />
                   </action>
                 </pluginExecution>
               </pluginExecutions>
