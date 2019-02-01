@@ -32,6 +32,7 @@ public class UrlGeneratorTemplate
     private final Map<String,String> macaroon;
     private final Pattern replacing;
     private final String with;
+    private final boolean isCreatePath;
 
     public UrlGeneratorTemplate(Configuration.GeneratedUrl config, UrlGenerator generator)
     {
@@ -41,11 +42,18 @@ public class UrlGeneratorTemplate
         if (derivedPath == null) {
             replacing = null;
             with = null;
+            isCreatePath = false;
         } else {
             String r = derivedPath.get("replacing");
             replacing = (r == null) ? null : Pattern.compile(r);
             with = derivedPath.get("with");
+            isCreatePath = config.isCreatePath();
         }
+    }
+
+    public boolean isCreatePath()
+    {
+        return this.isCreatePath;
     }
 
     public URI buildUrl(String path)

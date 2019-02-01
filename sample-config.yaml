@@ -44,10 +44,5 @@ files:
                 activity: UPLOAD
             derived-path:
                 replacing: '([^/]*)\.([^.]*)$'
-                with: '\1-derived.\2'
-        log:
-            with-macaroon:
-                activity: UPLOAD
-            derived-path:
-                replacing: '([^/]*)\.[^.]*$'
-                with: '\1-derived.log'
+                with: '\1-output'
+    	    create-path: true            # Create the path

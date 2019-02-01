@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.dcache.http.WebDAVClient;
 
 /**
  *
@@ -30,10 +31,10 @@ public class EventGenerators
     private final List<EventGenerator> generators;
 
     public EventGenerators(List<Configuration.EventSource> eventSources,
-            UrlGenerator urlGenerator)
+            UrlGenerator urlGenerator, WebDAVClient client)
     {
         generators = eventSources.stream()
-                .map(g -> new EventGenerator(g, urlGenerator))
+                .map(g -> new EventGenerator(g, urlGenerator, client))
                 .collect(Collectors.toList());
     }
 

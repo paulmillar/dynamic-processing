@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
+import org.dcache.http.WebDAVClient;
+
 /**
  *
  */
@@ -34,8 +36,10 @@ public class EventGenerator
     private final Pattern matching;
     private final Pattern ignoring;
     private final Map<String,UrlGeneratorTemplate> urlGeneratorTemplates = new HashMap<>();
+    private final WebDAVClient client;
 
-    public EventGenerator(Configuration.EventSource config, UrlGenerator urlGenerator)
+    public EventGenerator(Configuration.EventSource config, UrlGenerator urlGenerator,
+            WebDAVClient client)
     {
         String matchingRe = config.getPathPredicate().get("matching");
         matching = matchingRe == null ? null : Pattern.compile(matchingRe);
@@ -47,6 +51,7 @@ public class EventGenerator
             urlGeneratorTemplates.put(e.getKey(), new UrlGeneratorTemplate(e.getValue(), urlGenerator));
         }
         topic = config.getTarget();
+        this.client = client;
     }
 
     public boolean matches(String path)
@@ -74,7 +79,11 @@ public class EventGenerator
         Map<String,String> urls = new HashMap<>();
 
         for (Map.Entry<String, UrlGeneratorTemplate> e : urlGeneratorTemplates.entrySet()) {
-            URI url = e.getValue().buildUrl(path);
+            UrlGeneratorTemplate template = e.getValue();
+            URI url = template.buildUrl(path);
+            if (template.isCreatePath()) {
+                client.mkcol(url);
+            }
             urls.put(e.getKey(), url.toASCIIString());
         }
 

@@ -56,6 +56,7 @@ public class UrlGenerator
         try {
             return addMacaroon(baseUrl, macaroons.getMacaroon(url(path), activity));
         } catch (AuthenticationException | IOException e) {
+            System.out.println("Fetching macaroon failed: " + e);
             return baseUrl;
         }
 

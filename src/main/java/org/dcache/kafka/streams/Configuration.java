@@ -156,6 +156,9 @@ public class Configuration
         @JsonProperty("derived-path")
         private Map<String,String> derivedPath;
 
+        @JsonProperty("create-path")
+        private boolean createPath;
+
         public void setWithMacaroon(Map<String,String> withMacaroon)
         {
             this.withMacaroon = withMacaroon;
@@ -174,6 +177,16 @@ public class Configuration
         public Map<String,String> getDerivedPath()
         {
             return derivedPath;
+        }
+
+        public void setCreatePath(boolean isPathCreated)
+        {
+            this.createPath = isPathCreated;
+        }
+
+        public boolean isCreatePath()
+        {
+            return createPath;
         }
     }
 

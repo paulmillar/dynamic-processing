@@ -19,28 +19,12 @@ package org.dcache.macroons;
 
 import com.google.gson.Gson;
 import org.apache.http.auth.AuthenticationException;
-import org.apache.http.auth.Credentials;
-import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.config.Registry;
-import org.apache.http.config.RegistryBuilder;
-import org.apache.http.conn.HttpClientConnectionManager;
-import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.socket.PlainConnectionSocketFactory;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
-import org.apache.http.ssl.SSLContexts;
-
-import javax.net.ssl.SSLContext;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -63,42 +47,18 @@ public class MacaroonClient
     private static final ContentType MACAROON_REQUEST = ContentType.create("application/macaroon-request");
     private static final Duration MACAROON_VALIDITY = Duration.ofMinutes(5);
 
-    private final CloseableHttpClient client = prepareClient();
-    private final Credentials creds;
+    private final CloseableHttpClient client;
     private final Duration defaultDuration;
 
-    public static CloseableHttpClient prepareClient() {
-        try {
-            SSLContext sslContext = SSLContexts.custom()
-                    .loadTrustMaterial(null, new TrustSelfSignedStrategy()).build();
-            HttpClientBuilder builder = HttpClientBuilder.create();
-            SSLConnectionSocketFactory sslConnectionFactory =
-                    new SSLConnectionSocketFactory(sslContext.getSocketFactory(),
-                            new NoopHostnameVerifier());
-            builder.setSSLSocketFactory(sslConnectionFactory);
-            Registry<ConnectionSocketFactory> registry =
-                    RegistryBuilder.<ConnectionSocketFactory>create()
-                    .register("https", sslConnectionFactory)
-                    .register("http", new PlainConnectionSocketFactory())
-                    .build();
-            HttpClientConnectionManager ccm = new BasicHttpClientConnectionManager(registry);
-            builder.setConnectionManager(ccm);
-            return builder.build();
-        } catch (Exception ex) {
-            System.out.println("couldn't create httpClient!!" + ex.getMessage());
-            return null;
-        }
-    }
-
-    public MacaroonClient(Configuration.Macaroons config) throws AuthenticationException, IOException
+    public MacaroonClient(Configuration.Macaroons config, CloseableHttpClient client) throws AuthenticationException, IOException
     {
-        creds = new UsernamePasswordCredentials(config.getUsername(), config.getPassword());
+        this.client = client;
         Duration dl = config.getDefaultLifetime();
         defaultDuration = dl == null ? MACAROON_VALIDITY : dl;
 
-        checkCredentials();
+        // FIXME: this doesn't work as the preflight request succeeds.
+        //checkCredentials();
     }
-
 
     public String getMacaroon(URI uri, String activity)
             throws AuthenticationException, IOException
@@ -116,7 +76,6 @@ public class MacaroonClient
         request.setValidity(duration);
         String json = gson.toJson(request);
         httpPost.setEntity(new StringEntity(json, MACAROON_REQUEST));
-        httpPost.addHeader(new BasicScheme().authenticate(creds, httpPost, null));
 
         try (CloseableHttpResponse response = client.execute(httpPost)) {
             if (response.getStatusLine().getStatusCode() != 200) {
@@ -131,7 +90,6 @@ public class MacaroonClient
     private void checkCredentials() throws AuthenticationException, IOException
     {
         HttpGet httpGet = new HttpGet("https://dcache-xdc.desy.de:3880/api/v1/user");
-        httpGet.addHeader(new BasicScheme().authenticate(creds, httpGet, null));
         try (CloseableHttpResponse response = client.execute(httpGet)) {
             if (response.getStatusLine().getStatusCode() != 200) {
                 throw new IOException("Server replied " + response.getStatusLine());
