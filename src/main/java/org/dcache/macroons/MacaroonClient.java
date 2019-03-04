@@ -72,7 +72,8 @@ public class MacaroonClient
         Gson gson = new Gson();
         HttpPost httpPost = new HttpPost(uri);
 
-        MacaroonRequest request = new MacaroonRequest("activity:" + activity, "path:" + uri.getPath());
+        // A "path" caveat is added automatically from the POST request path
+        MacaroonRequest request = new MacaroonRequest("activity:" + activity);
         request.setValidity(duration);
         String json = gson.toJson(request);
         httpPost.setEntity(new StringEntity(json, MACAROON_REQUEST));
